@@ -1,0 +1,20 @@
+# Dependencies / build output
+node_modules/
+.next/
+out/
+build/
+*.tsbuildinfo
+
+# Secrets — never commit these (.env.example documents the variables instead)
+.env
+.env.*
+!.env.example
+
+# Local tooling / editor
+.claude/
+.vercel
+.DS_Store
+*.log
+
+# Old per-app scaffold repos, kept locally while this monorepo settles
+.git.scaffold-backup/
