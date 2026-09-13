@@ -11,16 +11,23 @@ export interface StudyFormValues {
   id?: string;
   slug: string;
   title: string;
+  subtitle: string;
   description: string;
+  main_verse: string;
   cover_image_url: string;
+  social_image_url: string;
   category_id: string;
   level: "beginner" | "intermediate" | "advanced";
   duration_minutes: string;
   status: "draft" | "published" | "archived";
   position: number;
+  seo_title: string;
+  seo_description: string;
 }
 
-export function StudyForm({ initial }: { initial: StudyFormValues }) {
+// stayOnSave: en la pantalla de edición el constructor está debajo, así que
+// guardar no debe sacarte de la página.
+export function StudyForm({ initial, stayOnSave }: { initial: StudyFormValues; stayOnSave?: boolean }) {
   const supabase = createClient();
   const router = useRouter();
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
@@ -28,6 +35,7 @@ export function StudyForm({ initial }: { initial: StudyFormValues }) {
   const [paragraphs, setParagraphs] = useState(textToParagraphs(initial.description));
   const [slugTouched, setSlugTouched] = useState(Boolean(initial.id));
   const [saving, setSaving] = useState(false);
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -59,26 +67,48 @@ export function StudyForm({ initial }: { initial: StudyFormValues }) {
     const payload = {
       slug: values.slug.trim(),
       title: values.title.trim(),
+      subtitle: values.subtitle.trim() || null,
       description: paragraphsToText(paragraphs),
+      main_verse: values.main_verse.trim() || null,
       cover_image_url: values.cover_image_url.trim() || null,
+      social_image_url: values.social_image_url.trim() || null,
       category_id: values.category_id || null,
       level: values.level,
       duration_minutes: values.duration_minutes ? Number(values.duration_minutes) : null,
       status: values.status,
       position: values.position,
+      seo_title: values.seo_title.trim() || null,
+      seo_description: values.seo_description.trim() || null,
       published_at: values.status === "published" ? new Date().toISOString() : null,
     };
 
-    const { error } = values.id
-      ? await supabase.from("casa_studies").update(payload).eq("id", values.id)
-      : await supabase.from("casa_studies").insert(payload);
-
-    setSaving(false);
-    if (error) {
-      setError(error.message);
+    if (values.id) {
+      const { error } = await supabase.from("casa_studies").update(payload).eq("id", values.id);
+      setSaving(false);
+      if (error) {
+        setError(error.message);
+        return;
+      }
+      if (stayOnSave) {
+        setSavedAt(new Date());
+        router.refresh();
+        return;
+      }
+      router.push("/estudios");
+      router.refresh();
       return;
     }
-    router.push("/estudios");
+
+    // Al crear, se entra directo al editor completo (secciones, versículos,
+    // previsualización) en lugar de volver a la lista — recién creado es
+    // cuando tiene sentido seguir construyendo el estudio.
+    const { data, error } = await supabase.from("casa_studies").insert(payload).select("id").single();
+    setSaving(false);
+    if (error || !data) {
+      setError(error?.message ?? "No se pudo crear el estudio.");
+      return;
+    }
+    router.push(`/estudios/${data.id}`);
     router.refresh();
   }
 
@@ -107,8 +137,24 @@ export function StudyForm({ initial }: { initial: StudyFormValues }) {
         />
       </div>
       <div>
+        <Label>Subtítulo</Label>
+        <TextInput
+          value={values.subtitle}
+          onChange={(v) => set("subtitle", v)}
+          placeholder="Una línea que acompañe al título"
+        />
+      </div>
+      <div>
         <Label>Descripción</Label>
         <ParagraphsEditor paragraphs={paragraphs} onChange={setParagraphs} />
+      </div>
+      <div>
+        <Label>Versículo principal (opcional)</Label>
+        <TextInput
+          value={values.main_verse}
+          onChange={(v) => set("main_verse", v)}
+          placeholder="El texto que abre el estudio"
+        />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
@@ -163,6 +209,36 @@ export function StudyForm({ initial }: { initial: StudyFormValues }) {
           />
         </div>
       </div>
+      <details className="rounded-2xl border border-border p-4">
+        <summary className="cursor-pointer text-sm text-muted-foreground">SEO y redes sociales</summary>
+        <div className="mt-4 space-y-4">
+          <div>
+            <Label>Título SEO</Label>
+            <TextInput
+              value={values.seo_title}
+              onChange={(v) => set("seo_title", v)}
+              placeholder="Si se deja vacío se usa el título del estudio"
+            />
+          </div>
+          <div>
+            <Label>Meta descripción</Label>
+            <TextInput
+              value={values.seo_description}
+              onChange={(v) => set("seo_description", v)}
+              placeholder="Resumen que aparece en Google y al compartir"
+            />
+          </div>
+          <div>
+            <Label>Imagen para compartir</Label>
+            <ImageUploadField
+              value={values.social_image_url}
+              onChange={(v) => set("social_image_url", v)}
+              folder="studies"
+            />
+          </div>
+        </div>
+      </details>
+
       <div>
         <Label>Estado</Label>
         <select
@@ -188,6 +264,11 @@ export function StudyForm({ initial }: { initial: StudyFormValues }) {
           <button onClick={remove} className="text-sm text-danger hover:underline">
             Eliminar
           </button>
+        )}
+        {savedAt && !error && (
+          <span className="text-xs text-muted-foreground">
+            Guardado {savedAt.toLocaleTimeString("es-PE")}
+          </span>
         )}
         {error && <span className="text-sm text-danger">{error}</span>}
       </div>

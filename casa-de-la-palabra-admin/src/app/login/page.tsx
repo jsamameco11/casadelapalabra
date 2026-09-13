@@ -14,6 +14,7 @@ function LoginForm() {
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState<"idle" | "sending" | "error">("idle");
   const [errorMsg, setErrorMsg] = useState("");
+  const [resetStatus, setResetStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -27,6 +28,19 @@ function LoginForm() {
     }
     router.push(next);
     router.refresh();
+  }
+
+  async function handleForgotPassword() {
+    if (!email) {
+      setStatus("error");
+      setErrorMsg("Escribe tu correo arriba y luego toca \"¿Olvidaste tu contraseña?\".");
+      return;
+    }
+    setResetStatus("sending");
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/callback?next=/actualizar-contrasena`,
+    });
+    setResetStatus(error ? "error" : "sent");
   }
 
   return (
@@ -69,6 +83,26 @@ function LoginForm() {
             {status === "sending" ? "Entrando…" : "Iniciar sesión"}
           </button>
           {status === "error" && <p className="text-center text-sm text-danger">{errorMsg}</p>}
+
+          <div className="pt-1 text-center">
+            {resetStatus === "sent" ? (
+              <p className="text-xs text-primary">
+                Te enviamos un correo a {email} con un enlace para crear una nueva contraseña.
+              </p>
+            ) : (
+              <button
+                type="button"
+                onClick={handleForgotPassword}
+                disabled={resetStatus === "sending"}
+                className="text-xs text-muted-foreground underline hover:text-foreground disabled:opacity-60"
+              >
+                {resetStatus === "sending" ? "Enviando enlace…" : "¿Olvidaste tu contraseña?"}
+              </button>
+            )}
+            {resetStatus === "error" && (
+              <p className="mt-1 text-xs text-danger">No se pudo enviar el correo. Intenta de nuevo.</p>
+            )}
+          </div>
         </form>
       </div>
     </div>

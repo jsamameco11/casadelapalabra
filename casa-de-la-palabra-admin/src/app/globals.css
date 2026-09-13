@@ -77,3 +77,50 @@ body {
 .font-display {
   font-family: var(--font-display), serif;
 }
+
+/* Previsualización del estudio: mismos tokens que el sitio público
+   (casa-de-la-palabra-web/src/app/globals.css) para que el panel de la
+   derecha muestre exactamente los mismos colores que verá el lector. */
+.study-experience {
+  --study-bg: #faf9f7;
+  --study-surface: #ffffff;
+  --study-ink: #0f172a;
+  --study-muted: #64748b;
+  --study-accent: #3b82f6;
+  --study-accent-soft: #60a5fa;
+  --study-line: #e8e6e1;
+  --study-shadow: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px -12px rgb(15 23 42 / 0.12);
+
+  background: var(--study-bg);
+  color: var(--study-ink);
+}
+
+:root[data-theme="dark"] .study-experience,
+:root:not([data-theme="light"]) .study-experience {
+  @media (prefers-color-scheme: dark) {
+    --study-bg: #0b1120;
+    --study-surface: #111a2e;
+    --study-ink: #e8edf7;
+    --study-muted: #94a3b8;
+    --study-accent: #60a5fa;
+    --study-accent-soft: #93c5fd;
+    --study-line: #1e293b;
+    --study-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+  }
+}
+
+:root[data-theme="dark"] .study-experience {
+  --study-bg: #0b1120;
+  --study-surface: #111a2e;
+  --study-ink: #e8edf7;
+  --study-muted: #94a3b8;
+  --study-accent: #60a5fa;
+  --study-accent-soft: #93c5fd;
+  --study-line: #1e293b;
+  --study-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -12px rgb(0 0 0 / 0.6);
+}
+
+.study-experience dialog::backdrop {
+  background: rgb(15 23 42 / 0.45);
+  backdrop-filter: blur(2px);
+}

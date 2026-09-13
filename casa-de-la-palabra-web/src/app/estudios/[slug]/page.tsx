@@ -1,36 +1,125 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import type { StudySection } from "@/lib/studies/blocks";
+import { StudyExperience } from "@/components/estudios/study-experience";
 
-const LEVEL_LABELS: Record<string, string> = { beginner: "Principiante", intermediate: "Intermedio", advanced: "Avanzado" };
+// Una sola consulta trae el estudio con sus secciones y contenidos anidados;
+// un estudio con muchas secciones no debe convertirse en decenas de viajes.
+const STUDY_QUERY = `
+  id, slug, title, subtitle, description, main_verse, level, duration_minutes,
+  cover_image_url, social_image_url, seo_title, seo_description, published_at,
+  casa_study_sections (
+    id, title, subtitle, position, is_visible, layout, image_url, configuration,
+    casa_study_contents (
+      id, type, position, is_visible, title, subtitle, body, media_url, media_alt, configuration,
+      casa_study_content_verses (
+        book_slug, chapter_start, verse_start, chapter_end, verse_end, translation_code,
+        text, show_reference, reflection_enabled, reflection_title, reflection_content,
+        reflection_configuration
+      )
+    )
+  )
+`;
+
+type StudyRow = {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle: string | null;
+  description: string | null;
+  main_verse: string | null;
+  level: string | null;
+  duration_minutes: number | null;
+  cover_image_url: string | null;
+  social_image_url: string | null;
+  seo_title: string | null;
+  seo_description: string | null;
+  published_at: string | null;
+  casa_study_sections: RawSection[] | null;
+};
+
+type RawSection = Omit<StudySection, "contents"> & { casa_study_contents: RawContent[] | null };
+// casa_study_content_verses es 1 a 1 (content_id es PK y FK a la vez), así
+// que PostgREST la embebe como objeto suelto, no como arreglo — a diferencia
+// de una relación 1 a muchos normal.
+type RawContent = Omit<StudySection["contents"][number], "verse"> & {
+  casa_study_content_verses: StudySection["contents"][number]["verse"] | null;
+};
+
+async function loadStudy(slug: string) {
+  const supabase = await createClient();
+  // No se filtra por status aquí: la política RLS "casa_studies_public_read_published"
+  // ya deja pasar published para cualquiera y unpublished solo para staff — filtrar
+  // otra vez acá bloquearía justamente el caso que esa política existe para permitir
+  // (que el equipo editorial pueda previsualizar un borrador en la URL real).
+  const { data } = await supabase.from("casa_studies").select(STUDY_QUERY).eq("slug", slug).maybeSingle();
+  return (data as StudyRow | null) ?? null;
+}
+
+// Lo oculto se filtra acá además de en RLS: el staff sí puede leerlo, pero en
+// la página pública nunca debe aparecer.
+function visibleSections(study: StudyRow): StudySection[] {
+  return (study.casa_study_sections ?? [])
+    .filter((section) => section.is_visible)
+    .sort((a, b) => a.position - b.position)
+    .map((section) => ({
+      ...section,
+      contents: (section.casa_study_contents ?? [])
+        .filter((content) => content.is_visible)
+        .sort((a, b) => a.position - b.position)
+        .map((content) => ({
+          ...content,
+          verse: content.casa_study_content_verses ?? null,
+        })),
+    }));
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const study = await loadStudy(slug);
+  if (!study) return {};
+
+  const title = study.seo_title ?? study.title;
+  const description = study.seo_description ?? study.subtitle ?? study.description?.slice(0, 160) ?? undefined;
+  const image = study.social_image_url ?? study.cover_image_url ?? undefined;
+
+  return {
+    title,
+    description,
+    alternates: { canonical: `/estudios/${study.slug}` },
+    openGraph: {
+      type: "article",
+      title,
+      description,
+      url: `/estudios/${study.slug}`,
+      images: image ? [image] : undefined,
+      publishedTime: study.published_at ?? undefined,
+    },
+    twitter: { card: image ? "summary_large_image" : "summary", title, description },
+  };
+}
 
 export default async function EstudioPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const supabase = await createClient();
-  const { data: study } = await supabase
-    .from("casa_studies")
-    .select("title, description, level, duration_minutes, cover_image_url")
-    .eq("slug", slug)
-    .eq("status", "published")
-    .maybeSingle();
-
+  const study = await loadStudy(slug);
   if (!study) notFound();
 
+  const sections = visibleSections(study);
+
+  // Los nombres de libro salen de la Biblia que ya vive en la base, así que la
+  // referencia se muestra bien aunque el editor solo eligiera el libro.
+  const supabase = await createClient();
+  const { data: books } = await supabase.from("casa_bible_books").select("slug, default_name");
+  const bookNames = Object.fromEntries((books ?? []).map((b) => [b.slug, b.default_name]));
+
   return (
-    <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 lg:px-8">
-      {study.cover_image_url && (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={study.cover_image_url} alt={study.title} className="mb-6 h-56 w-full rounded-3xl object-cover" />
-      )}
-      <p className="text-xs font-semibold uppercase tracking-widest text-accent">
-        {LEVEL_LABELS[study.level] ?? study.level}
-        {study.duration_minutes ? ` · ${study.duration_minutes} min` : ""}
-      </p>
-      <h1 className="mt-2 font-display text-3xl font-medium sm:text-4xl">{study.title}</h1>
-      {study.description && (
-        <div className="mt-6 space-y-4 whitespace-pre-line text-sm leading-relaxed text-foreground/80 sm:text-base">
-          {study.description}
-        </div>
-      )}
-    </div>
+    <article>
+      <StudyExperience
+        study={{ id: study.id, slug: study.slug, title: study.title, subtitle: study.subtitle }}
+        sections={sections}
+        bookNames={bookNames}
+      />
+    </article>
   );
 }
