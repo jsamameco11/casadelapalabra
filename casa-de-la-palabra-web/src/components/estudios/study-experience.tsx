@@ -11,16 +11,27 @@ interface StudyHeader {
   subtitle: string | null;
 }
 
+interface MainVerse {
+  text: string;
+  book_slug: string | null;
+  chapter_start: number | null;
+  verse_start: number | null;
+  verse_end: number | null;
+  translation_code: string | null;
+}
+
 // La lectura ocurre en tarjetas numeradas; el desglose completo de cada
 // sección se abre en un modal. Lo que se ve en la tarjeta sale del contenido
 // real: si la sección tiene versículo se muestra su referencia, si tiene lista
 // se muestran sus puntos, etc. Nada está escrito a mano acá.
 export function StudyExperience({
   study,
+  mainVerse,
   sections,
   bookNames,
 }: {
   study: StudyHeader;
+  mainVerse?: MainVerse | null;
   sections: StudySection[];
   bookNames: Record<string, string>;
 }) {
@@ -84,6 +95,8 @@ export function StudyExperience({
           </p>
         )}
 
+        {mainVerse && <MainVerseHero verse={mainVerse} bookNames={bookNames} />}
+
         <ol className="space-y-4">
           {sections.map((section, index) => (
             <SectionCard
@@ -133,6 +146,45 @@ export function StudyExperience({
         }}
       />
     </div>
+  );
+}
+
+// El versículo principal del estudio: cita destacada arriba de las
+// secciones, con la referencia mostrada aparte del texto (nunca en la misma
+// línea) para que se note que es un versículo y no un párrafo más.
+function MainVerseHero({ verse, bookNames }: { verse: MainVerse; bookNames: Record<string, string> }) {
+  const reference = formatReference(
+    {
+      book_slug: verse.book_slug,
+      chapter_start: verse.chapter_start,
+      verse_start: verse.verse_start,
+      chapter_end: null,
+      verse_end: verse.verse_end,
+      translation_code: null,
+      text: null,
+      show_reference: true,
+      reflection_enabled: false,
+      reflection_title: null,
+      reflection_content: null,
+      reflection_configuration: {},
+    },
+    verse.book_slug ? bookNames[verse.book_slug] : undefined
+  );
+  const translation = verse.translation_code ? ` · ${verse.translation_code}` : "";
+
+  return (
+    <figure
+      className="mx-auto mb-10 max-w-2xl rounded-3xl p-8 text-center sm:p-10"
+      style={{ background: "var(--study-surface)", boxShadow: "var(--study-shadow)" }}
+    >
+      <blockquote className="font-display text-xl italic leading-relaxed sm:text-2xl">{verse.text}</blockquote>
+      {reference && (
+        <figcaption className="mt-4 text-sm" style={{ color: "var(--study-muted)" }}>
+          — {reference}
+          {translation}
+        </figcaption>
+      )}
+    </figure>
   );
 }
 

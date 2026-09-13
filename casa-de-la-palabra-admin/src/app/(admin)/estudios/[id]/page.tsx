@@ -14,7 +14,7 @@ export default async function EditarEstudioPage({ params }: { params: Promise<{ 
     supabase
       .from("casa_studies")
       .select(
-        "id, slug, title, subtitle, description, main_verse, cover_image_url, social_image_url, category_id, level, duration_minutes, status, position, seo_title, seo_description"
+        "id, slug, title, subtitle, description, main_verse, main_verse_book_slug, main_verse_chapter, main_verse_verse_start, main_verse_verse_end, main_verse_translation_code, cover_image_url, social_image_url, category_id, level, duration_minutes, status, position, seo_title, seo_description"
       )
       .eq("id", id)
       .maybeSingle(),
@@ -42,6 +42,11 @@ export default async function EditarEstudioPage({ params }: { params: Promise<{ 
               subtitle: data.subtitle ?? "",
               description: data.description ?? "",
               main_verse: data.main_verse ?? "",
+              main_verse_book_slug: data.main_verse_book_slug ?? "",
+              main_verse_chapter: data.main_verse_chapter ? String(data.main_verse_chapter) : "",
+              main_verse_verse_start: data.main_verse_verse_start ? String(data.main_verse_verse_start) : "",
+              main_verse_verse_end: data.main_verse_verse_end ? String(data.main_verse_verse_end) : "",
+              main_verse_translation_code: data.main_verse_translation_code ?? "",
               cover_image_url: data.cover_image_url ?? "",
               social_image_url: data.social_image_url ?? "",
               category_id: data.category_id ?? "",
@@ -70,6 +75,18 @@ export default async function EditarEstudioPage({ params }: { params: Promise<{ 
           </div>
           <StudyEditor
             study={{ id: data.id, slug: data.slug, title: data.title, subtitle: data.subtitle }}
+            mainVerse={
+              data.main_verse
+                ? {
+                    text: data.main_verse,
+                    book_slug: data.main_verse_book_slug,
+                    chapter_start: data.main_verse_chapter,
+                    verse_start: data.main_verse_verse_start,
+                    verse_end: data.main_verse_verse_end,
+                    translation_code: data.main_verse_translation_code,
+                  }
+                : null
+            }
             bookNames={bookNames}
           />
         </section>

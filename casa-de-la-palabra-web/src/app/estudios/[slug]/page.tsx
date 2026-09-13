@@ -7,7 +7,8 @@ import { StudyExperience } from "@/components/estudios/study-experience";
 // Una sola consulta trae el estudio con sus secciones y contenidos anidados;
 // un estudio con muchas secciones no debe convertirse en decenas de viajes.
 const STUDY_QUERY = `
-  id, slug, title, subtitle, description, main_verse, level, duration_minutes,
+  id, slug, title, subtitle, description, main_verse, main_verse_book_slug, main_verse_chapter,
+  main_verse_verse_start, main_verse_verse_end, main_verse_translation_code, level, duration_minutes,
   cover_image_url, social_image_url, seo_title, seo_description, published_at,
   casa_study_sections (
     id, title, subtitle, position, is_visible, layout, image_url, configuration,
@@ -29,6 +30,11 @@ type StudyRow = {
   subtitle: string | null;
   description: string | null;
   main_verse: string | null;
+  main_verse_book_slug: string | null;
+  main_verse_chapter: number | null;
+  main_verse_verse_start: number | null;
+  main_verse_verse_end: number | null;
+  main_verse_translation_code: string | null;
   level: string | null;
   duration_minutes: number | null;
   cover_image_url: string | null;
@@ -113,10 +119,22 @@ export default async function EstudioPage({ params }: { params: Promise<{ slug: 
   const { data: books } = await supabase.from("casa_bible_books").select("slug, default_name");
   const bookNames = Object.fromEntries((books ?? []).map((b) => [b.slug, b.default_name]));
 
+  const mainVerse = study.main_verse
+    ? {
+        text: study.main_verse,
+        book_slug: study.main_verse_book_slug,
+        chapter_start: study.main_verse_chapter,
+        verse_start: study.main_verse_verse_start,
+        verse_end: study.main_verse_verse_end,
+        translation_code: study.main_verse_translation_code,
+      }
+    : null;
+
   return (
     <article>
       <StudyExperience
         study={{ id: study.id, slug: study.slug, title: study.title, subtitle: study.subtitle }}
+        mainVerse={mainVerse}
         sections={sections}
         bookNames={bookNames}
       />

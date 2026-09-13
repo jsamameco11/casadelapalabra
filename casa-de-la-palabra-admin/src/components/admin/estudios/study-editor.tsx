@@ -12,15 +12,26 @@ interface StudyHeader {
   subtitle: string | null;
 }
 
+interface MainVerse {
+  text: string;
+  book_slug: string | null;
+  chapter_start: number | null;
+  verse_start: number | null;
+  verse_end: number | null;
+  translation_code: string | null;
+}
+
 // Constructor + previsualización en vivo, uno al lado del otro. El
 // constructor guarda solo (persiste apenas escribes); la previsualización
 // simplemente refleja ese mismo estado con los componentes reales del sitio
 // público, así que nunca puede desincronizarse "olvidando guardar".
 export function StudyEditor({
   study,
+  mainVerse,
   bookNames,
 }: {
   study: StudyHeader;
+  mainVerse?: MainVerse | null;
   bookNames: Record<string, string>;
 }) {
   const [sections, setSections] = useState<StudySection[]>([]);
@@ -46,7 +57,7 @@ export function StudyEditor({
               </span>
             </div>
             <div className="max-h-[calc(100vh-14rem)] overflow-y-auto">
-              <StudyExperience study={study} sections={sections} bookNames={bookNames} />
+              <StudyExperience study={study} mainVerse={mainVerse} sections={sections} bookNames={bookNames} />
             </div>
           </div>
         </div>

@@ -1,19 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { useState } from "react";
 import { ImageUploadField } from "@/components/admin/image-upload-field";
 import type { StudyContent, StudyVerse } from "@/lib/studies/blocks";
 import { formatReference } from "@/lib/studies/blocks";
 import { VERSE_LAYOUT_OPTIONS } from "@/lib/studies/library";
+import { useBibleReferenceData } from "@/lib/studies/use-bible-reference-data";
+import { fetchStoredVerseText } from "@/lib/studies/fetch-verse-text";
 import { CheckboxField, Field, NumberField, SelectField, TextAreaField, TextField } from "./field";
-
-interface BibleBook {
-  slug: string;
-  default_name: string;
-  testament: string;
-  chapter_count: number;
-}
 
 // Editor de versículo. El texto siempre queda en manos del editor: se puede
 // traer de la Biblia que ya está en la base, pero es un atajo, no una atadura
@@ -27,36 +21,16 @@ export function VerseEditor({
   onVerseChange: (patch: Partial<StudyVerse>) => void;
   onContentChange: (patch: Partial<StudyContent>) => void;
 }) {
-  const supabase = createClient();
   const verse = content.verse;
-  const [books, setBooks] = useState<BibleBook[]>([]);
-  const [translations, setTranslations] = useState<{ code: string; short_name: string | null; name: string }[]>([]);
+  const { books, translations } = useBibleReferenceData();
   const [fetching, setFetching] = useState(false);
   const [fetchMessage, setFetchMessage] = useState("");
-
-  useEffect(() => {
-    supabase
-      .from("casa_bible_books")
-      .select("slug, default_name, testament, chapter_count")
-      .order("book_number")
-      .then(({ data }) => setBooks((data as BibleBook[]) ?? []));
-
-    supabase
-      .from("casa_bible_translations")
-      .select("code, short_name, name")
-      .eq("is_active", true)
-      .order("position")
-      .then(({ data }) => setTranslations(data ?? []));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   if (!verse) return null;
 
   const book = books.find((b) => b.slug === verse.book_slug);
   const reference = formatReference(verse, book?.default_name);
 
-  // Atajo: rellena el texto desde la Biblia almacenada. Solo funciona con las
-  // traducciones guardadas en la base; las de licencia en vivo no se copian.
   async function fetchFromBible() {
     if (!verse?.book_slug || !verse.chapter_start || !verse.verse_start || !verse.translation_code) {
       setFetchMessage("Elige libro, capítulo, versículo y traducción primero.");
@@ -64,44 +38,19 @@ export function VerseEditor({
     }
     setFetching(true);
     setFetchMessage("");
-
-    const { data: chapter } = await supabase
-      .from("casa_bible_chapters")
-      .select("id, casa_bible_books!inner(slug)")
-      .eq("chapter_number", verse.chapter_start)
-      .eq("casa_bible_books.slug", verse.book_slug)
-      .maybeSingle();
-
-    const { data: translation } = await supabase
-      .from("casa_bible_translations")
-      .select("id")
-      .eq("code", verse.translation_code)
-      .maybeSingle();
-
-    if (!chapter || !translation) {
-      setFetching(false);
-      setFetchMessage("No se encontró ese pasaje en la Biblia almacenada.");
-      return;
-    }
-
-    const from = verse.verse_start;
-    const to = verse.verse_end ?? verse.verse_start;
-    const { data: verses } = await supabase
-      .from("casa_bible_verses")
-      .select("verse_number, text")
-      .eq("chapter_id", chapter.id)
-      .eq("translation_id", translation.id)
-      .gte("verse_number", from)
-      .lte("verse_number", to)
-      .order("verse_number");
-
+    const result = await fetchStoredVerseText({
+      bookSlug: verse.book_slug,
+      chapterStart: verse.chapter_start,
+      verseStart: verse.verse_start,
+      verseEnd: verse.verse_end,
+      translationCode: verse.translation_code,
+    });
     setFetching(false);
-
-    if (!verses?.length) {
-      setFetchMessage("Esa traducción no tiene el texto guardado (puede ser de licencia en vivo).");
+    if ("error" in result) {
+      setFetchMessage(result.error);
       return;
     }
-    onVerseChange({ text: verses.map((v) => v.text).join(" ") });
+    onVerseChange({ text: result.text });
     setFetchMessage("Texto traído. Puedes editarlo libremente.");
   }
 

@@ -6,6 +6,7 @@ import { createClient } from "@/lib/supabase/client";
 import { slugify } from "@/lib/slugify";
 import { ParagraphsEditor, paragraphsToText, textToParagraphs } from "@/components/admin/paragraphs-editor";
 import { ImageUploadField } from "@/components/admin/image-upload-field";
+import { MainVerseFields } from "@/components/admin/estudios/main-verse-fields";
 
 export interface StudyFormValues {
   id?: string;
@@ -14,6 +15,11 @@ export interface StudyFormValues {
   subtitle: string;
   description: string;
   main_verse: string;
+  main_verse_book_slug: string;
+  main_verse_chapter: string;
+  main_verse_verse_start: string;
+  main_verse_verse_end: string;
+  main_verse_translation_code: string;
   cover_image_url: string;
   social_image_url: string;
   category_id: string;
@@ -70,6 +76,11 @@ export function StudyForm({ initial, stayOnSave }: { initial: StudyFormValues; s
       subtitle: values.subtitle.trim() || null,
       description: paragraphsToText(paragraphs),
       main_verse: values.main_verse.trim() || null,
+      main_verse_book_slug: values.main_verse_book_slug || null,
+      main_verse_chapter: values.main_verse_chapter ? Number(values.main_verse_chapter) : null,
+      main_verse_verse_start: values.main_verse_verse_start ? Number(values.main_verse_verse_start) : null,
+      main_verse_verse_end: values.main_verse_verse_end ? Number(values.main_verse_verse_end) : null,
+      main_verse_translation_code: values.main_verse_translation_code || null,
       cover_image_url: values.cover_image_url.trim() || null,
       social_image_url: values.social_image_url.trim() || null,
       category_id: values.category_id || null,
@@ -150,11 +161,11 @@ export function StudyForm({ initial, stayOnSave }: { initial: StudyFormValues; s
       </div>
       <div>
         <Label>Versículo principal (opcional)</Label>
-        <TextInput
-          value={values.main_verse}
-          onChange={(v) => set("main_verse", v)}
-          placeholder="El texto que abre el estudio"
-        />
+        <p className="mb-2 text-xs text-muted-foreground">
+          Referencia y texto van por separado, para que se muestren de forma especial en la página del estudio y no
+          como una sola línea de texto.
+        </p>
+        <MainVerseFields values={values} onChange={set} />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div>
