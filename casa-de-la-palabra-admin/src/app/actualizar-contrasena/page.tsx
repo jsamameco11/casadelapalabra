@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { PasswordInput } from "@/components/ui/password-input";
 
 export default function ActualizarContrasenaPage() {
   const supabase = createClient();
@@ -52,26 +53,22 @@ export default function ActualizarContrasenaPage() {
           <form onSubmit={handleSubmit} className="mt-8 space-y-3 text-left">
             <div>
               <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Nueva contraseña</label>
-              <input
-                type="password"
+              <PasswordInput
                 required
                 autoComplete="new-password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full rounded-full border border-border bg-background px-5 py-3 text-sm outline-none focus:border-primary"
               />
             </div>
             <div>
               <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Confirmar contraseña</label>
-              <input
-                type="password"
+              <PasswordInput
                 required
                 autoComplete="new-password"
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 placeholder="••••••••"
-                className="w-full rounded-full border border-border bg-background px-5 py-3 text-sm outline-none focus:border-primary"
               />
             </div>
             <button

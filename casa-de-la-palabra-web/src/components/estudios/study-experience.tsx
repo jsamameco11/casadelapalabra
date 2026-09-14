@@ -258,7 +258,7 @@ function SectionCard({
   return (
     <li>
       <article
-        className="group grid grid-cols-[auto_1fr] gap-4 rounded-2xl p-5 transition-shadow sm:gap-6 sm:p-6"
+        className="group relative grid grid-cols-[auto_1fr] gap-4 rounded-2xl p-5 transition-shadow sm:gap-6 sm:p-6"
         style={{ background: "var(--study-surface)", boxShadow: "var(--study-shadow)" }}
       >
         <div

@@ -3,6 +3,7 @@
 import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
+import { PasswordInput } from "@/components/ui/password-input";
 
 function LoginForm() {
   const supabase = createClient();
@@ -65,14 +66,12 @@ function LoginForm() {
           </div>
           <div>
             <label className="mb-1.5 block text-xs font-medium text-muted-foreground">Contraseña</label>
-            <input
-              type="password"
+            <PasswordInput
               required
               autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full rounded-full border border-border bg-background px-5 py-3 text-sm outline-none focus:border-primary"
             />
           </div>
           <button
