@@ -13,12 +13,20 @@ const LEVEL_LABELS: Record<string, string> = {
 
 const LEVEL_OPTIONS = Object.entries(LEVEL_LABELS).map(([value, label]) => ({ value, label }));
 
+// PostgREST usa "," y "()" como separadores dentro de .or(...) — se quitan
+// del término de búsqueda para que un usuario escribiendo algo como
+// "fe, esperanza" no rompa el filtro ni se interprete como otra condición.
+function sanitizeSearchTerm(value: string) {
+  return value.replace(/[,()]/g, " ").trim();
+}
+
 export default async function EstudiosPage({
   searchParams,
 }: {
-  searchParams: Promise<{ nivel?: string }>;
+  searchParams: Promise<{ nivel?: string; q?: string }>;
 }) {
-  const { nivel } = await searchParams;
+  const { nivel, q } = await searchParams;
+  const term = sanitizeSearchTerm(q ?? "");
   const supabase = await createClient();
   let query = supabase
     .from("casa_studies")
@@ -26,6 +34,7 @@ export default async function EstudiosPage({
     .eq("status", "published")
     .order("position", { ascending: true });
   if (nivel) query = query.eq("level", nivel);
+  if (term) query = query.or(`title.ilike.%${term}%,description.ilike.%${term}%`);
   const { data } = await query;
 
   const studies = data ?? [];
@@ -41,9 +50,16 @@ export default async function EstudiosPage({
         filterLabel="Todos los niveles"
         options={LEVEL_OPTIONS}
         selected={nivel}
+        search={{ paramName: "q", placeholder: "Buscar estudios…", value: q }}
       />
       {studies.length === 0 ? (
-        <ComingSoon label="La biblioteca de estudios" />
+        term || nivel ? (
+          <p className="mx-auto max-w-2xl px-4 pb-24 text-center text-sm text-muted-foreground sm:px-6 lg:px-8">
+            Ningún estudio coincide con tu búsqueda. Prueba con otra palabra o quita el filtro de nivel.
+          </p>
+        ) : (
+          <ComingSoon label="La biblioteca de estudios" />
+        )
       ) : (
         <div className="mx-auto grid max-w-6xl gap-6 px-4 pb-24 sm:grid-cols-2 sm:px-6 lg:grid-cols-3 lg:px-8">
           {studies.map((s) => (
