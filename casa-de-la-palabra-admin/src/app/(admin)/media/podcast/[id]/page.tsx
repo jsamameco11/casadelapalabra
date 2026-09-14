@@ -8,7 +8,7 @@ export default async function EditarEpisodioPage({ params }: { params: Promise<{
   const supabase = await createClient();
   const { data } = await supabase
     .from("casa_podcast_episodes")
-    .select("id, slug, title, description, cover_image_url, audio_url, spotify_url, apple_podcasts_url, youtube_url, status, position")
+    .select("id, slug, title, description, cover_image_url, audio_url, spotify_url, apple_podcasts_url, youtube_url, category_id, status, position")
     .eq("id", id)
     .maybeSingle();
 
@@ -27,6 +27,7 @@ export default async function EditarEpisodioPage({ params }: { params: Promise<{
           spotify_url: data.spotify_url ?? "",
           apple_podcasts_url: data.apple_podcasts_url ?? "",
           youtube_url: data.youtube_url ?? "",
+          category_id: data.category_id ?? "",
           status: data.status,
           position: data.position,
         }}

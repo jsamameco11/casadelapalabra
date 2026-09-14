@@ -1,22 +1,43 @@
 import { createClient } from "@/lib/supabase/server";
-import { PageHeader, ComingSoon } from "@/components/layout/page-header";
+import { ComingSoon } from "@/components/layout/page-header";
+import { ContentPageHeader } from "@/components/layout/content-page-header";
 import Link from "next/link";
 
 export const metadata = { title: "Videos" };
 
-export default async function VideosPage() {
+export default async function VideosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ categoria?: string }>;
+}) {
+  const { categoria } = await searchParams;
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("casa_videos")
-    .select("id, slug, title, thumbnail_url")
-    .eq("status", "published")
-    .order("position", { ascending: true });
+  const [{ data: categories }, videoResult] = await Promise.all([
+    supabase.from("casa_categories").select("id, name").eq("module", "videos").order("position"),
+    (async () => {
+      let query = supabase
+        .from("casa_videos")
+        .select("id, slug, title, thumbnail_url")
+        .eq("status", "published")
+        .order("position", { ascending: true });
+      if (categoria) query = query.eq("category_id", categoria);
+      return query;
+    })(),
+  ]);
 
-  const videos = data ?? [];
+  const videos = videoResult.data ?? [];
 
   return (
     <div>
-      <PageHeader eyebrow="Media" title="Videos" />
+      <ContentPageHeader
+        eyebrow="Media"
+        title="Videos"
+        basePath="/media/videos"
+        paramName="categoria"
+        filterLabel="Todas las categorías"
+        options={(categories ?? []).map((c) => ({ value: c.id, label: c.name }))}
+        selected={categoria}
+      />
       {videos.length === 0 ? (
         <ComingSoon label="La galería de videos" />
       ) : (

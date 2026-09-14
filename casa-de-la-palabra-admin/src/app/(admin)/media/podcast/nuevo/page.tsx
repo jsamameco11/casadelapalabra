@@ -16,6 +16,7 @@ export default function NuevoEpisodioPage() {
           spotify_url: "",
           apple_podcasts_url: "",
           youtube_url: "",
+          category_id: "",
           status: "draft",
           position: 0,
         }}

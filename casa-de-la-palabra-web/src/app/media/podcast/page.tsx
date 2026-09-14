@@ -1,22 +1,43 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { PageHeader, ComingSoon } from "@/components/layout/page-header";
+import { ComingSoon } from "@/components/layout/page-header";
+import { ContentPageHeader } from "@/components/layout/content-page-header";
 
 export const metadata = { title: "Podcast" };
 
-export default async function PodcastPage() {
+export default async function PodcastPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ categoria?: string }>;
+}) {
+  const { categoria } = await searchParams;
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("casa_podcast_episodes")
-    .select("id, slug, title, description, cover_image_url, spotify_url, apple_podcasts_url, youtube_url")
-    .eq("status", "published")
-    .order("position", { ascending: true });
+  const [{ data: categories }, episodeResult] = await Promise.all([
+    supabase.from("casa_categories").select("id, name").eq("module", "podcasts").order("position"),
+    (async () => {
+      let query = supabase
+        .from("casa_podcast_episodes")
+        .select("id, slug, title, description, cover_image_url, spotify_url, apple_podcasts_url, youtube_url")
+        .eq("status", "published")
+        .order("position", { ascending: true });
+      if (categoria) query = query.eq("category_id", categoria);
+      return query;
+    })(),
+  ]);
 
-  const episodes = data ?? [];
+  const episodes = episodeResult.data ?? [];
 
   return (
     <div>
-      <PageHeader eyebrow="Media" title="Podcast" />
+      <ContentPageHeader
+        eyebrow="Media"
+        title="Podcast"
+        basePath="/media/podcast"
+        paramName="categoria"
+        filterLabel="Todas las categorías"
+        options={(categories ?? []).map((c) => ({ value: c.id, label: c.name }))}
+        selected={categoria}
+      />
       {episodes.length === 0 ? (
         <ComingSoon label="El podcast" />
       ) : (

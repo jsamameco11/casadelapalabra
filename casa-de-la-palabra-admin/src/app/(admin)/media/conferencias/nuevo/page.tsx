@@ -16,6 +16,7 @@ export default function NuevaConferenciaPage() {
           summary: "",
           description: "",
           video_url: "",
+          category_id: "",
           status: "draft",
           position: 0,
         }}

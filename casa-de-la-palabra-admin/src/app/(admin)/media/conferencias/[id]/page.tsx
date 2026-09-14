@@ -8,7 +8,7 @@ export default async function EditarConferenciaPage({ params }: { params: Promis
   const supabase = await createClient();
   const { data } = await supabase
     .from("casa_conferences")
-    .select("id, slug, title, speaker, event_date, location, summary, description, video_url, status, position")
+    .select("id, slug, title, speaker, event_date, location, summary, description, video_url, category_id, status, position")
     .eq("id", id)
     .maybeSingle();
 
@@ -27,6 +27,7 @@ export default async function EditarConferenciaPage({ params }: { params: Promis
           summary: data.summary ?? "",
           description: data.description ?? "",
           video_url: data.video_url ?? "",
+          category_id: data.category_id ?? "",
           status: data.status,
           position: data.position,
         }}

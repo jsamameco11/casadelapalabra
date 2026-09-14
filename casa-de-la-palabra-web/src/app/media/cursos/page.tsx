@@ -1,22 +1,43 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { PageHeader, ComingSoon } from "@/components/layout/page-header";
+import { ComingSoon } from "@/components/layout/page-header";
+import { ContentPageHeader } from "@/components/layout/content-page-header";
 
 export const metadata = { title: "Cursos" };
 
-export default async function CursosPage() {
+export default async function CursosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ categoria?: string }>;
+}) {
+  const { categoria } = await searchParams;
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("casa_courses")
-    .select("id, slug, title, description, is_premium, cover_image_url")
-    .eq("status", "published")
-    .order("position", { ascending: true });
+  const [{ data: categories }, courseResult] = await Promise.all([
+    supabase.from("casa_categories").select("id, name").eq("module", "courses").order("position"),
+    (async () => {
+      let query = supabase
+        .from("casa_courses")
+        .select("id, slug, title, description, is_premium, cover_image_url")
+        .eq("status", "published")
+        .order("position", { ascending: true });
+      if (categoria) query = query.eq("category_id", categoria);
+      return query;
+    })(),
+  ]);
 
-  const courses = data ?? [];
+  const courses = courseResult.data ?? [];
 
   return (
     <div>
-      <PageHeader eyebrow="Media" title="Cursos" />
+      <ContentPageHeader
+        eyebrow="Media"
+        title="Cursos"
+        basePath="/media/cursos"
+        paramName="categoria"
+        filterLabel="Todas las categorías"
+        options={(categories ?? []).map((c) => ({ value: c.id, label: c.name }))}
+        selected={categoria}
+      />
       {courses.length === 0 ? (
         <ComingSoon label="El catálogo de cursos" />
       ) : (

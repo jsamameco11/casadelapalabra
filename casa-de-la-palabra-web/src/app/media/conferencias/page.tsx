@@ -1,22 +1,43 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { PageHeader, ComingSoon } from "@/components/layout/page-header";
+import { ComingSoon } from "@/components/layout/page-header";
+import { ContentPageHeader } from "@/components/layout/content-page-header";
 
 export const metadata = { title: "Conferencias Pasadas" };
 
-export default async function ConferenciasPage() {
+export default async function ConferenciasPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ categoria?: string }>;
+}) {
+  const { categoria } = await searchParams;
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("casa_conferences")
-    .select("id, slug, title, speaker, event_date")
-    .eq("status", "published")
-    .order("position", { ascending: true });
+  const [{ data: categories }, conferenceResult] = await Promise.all([
+    supabase.from("casa_categories").select("id, name").eq("module", "conferences").order("position"),
+    (async () => {
+      let query = supabase
+        .from("casa_conferences")
+        .select("id, slug, title, speaker, event_date")
+        .eq("status", "published")
+        .order("position", { ascending: true });
+      if (categoria) query = query.eq("category_id", categoria);
+      return query;
+    })(),
+  ]);
 
-  const conferences = data ?? [];
+  const conferences = conferenceResult.data ?? [];
 
   return (
     <div>
-      <PageHeader eyebrow="Media" title="Conferencias Pasadas" />
+      <ContentPageHeader
+        eyebrow="Media"
+        title="Conferencias Pasadas"
+        basePath="/media/conferencias"
+        paramName="categoria"
+        filterLabel="Todas las categorías"
+        options={(categories ?? []).map((c) => ({ value: c.id, label: c.name }))}
+        selected={categoria}
+      />
       {conferences.length === 0 ? (
         <ComingSoon label="El archivo de conferencias" />
       ) : (

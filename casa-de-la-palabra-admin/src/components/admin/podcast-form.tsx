@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { slugify } from "@/lib/slugify";
@@ -17,6 +17,7 @@ export interface PodcastFormValues {
   spotify_url: string;
   apple_podcasts_url: string;
   youtube_url: string;
+  category_id: string;
   status: "draft" | "published" | "archived";
   position: number;
 }
@@ -24,11 +25,22 @@ export interface PodcastFormValues {
 export function PodcastForm({ initial }: { initial: PodcastFormValues }) {
   const supabase = createClient();
   const router = useRouter();
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [values, setValues] = useState(initial);
   const [paragraphs, setParagraphs] = useState(textToParagraphs(initial.description));
   const [slugTouched, setSlugTouched] = useState(Boolean(initial.id));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
+
+  useEffect(() => {
+    supabase
+      .from("casa_categories")
+      .select("id, name")
+      .eq("module", "podcasts")
+      .order("position")
+      .then(({ data }) => setCategories(data ?? []));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function set<K extends keyof PodcastFormValues>(key: K, value: PodcastFormValues[K]) {
     setValues((v) => ({ ...v, [key]: value }));
@@ -55,6 +67,7 @@ export function PodcastForm({ initial }: { initial: PodcastFormValues }) {
       spotify_url: values.spotify_url.trim() || null,
       apple_podcasts_url: values.apple_podcasts_url.trim() || null,
       youtube_url: values.youtube_url.trim() || null,
+      category_id: values.category_id || null,
       status: values.status,
       position: values.position,
       published_at: values.status === "published" ? new Date().toISOString() : null,
@@ -123,7 +136,22 @@ export function PodcastForm({ initial }: { initial: PodcastFormValues }) {
           <TextInput value={values.youtube_url} onChange={(v) => set("youtube_url", v)} />
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-3 gap-4">
+        <div>
+          <Label>Categoría</Label>
+          <select
+            value={values.category_id}
+            onChange={(e) => set("category_id", e.target.value)}
+            className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary"
+          >
+            <option value="">Sin categoría</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
         <div>
           <Label>Orden</Label>
           <input

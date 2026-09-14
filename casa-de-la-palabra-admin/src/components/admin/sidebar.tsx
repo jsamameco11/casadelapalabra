@@ -19,6 +19,7 @@ const NAV_GROUPS: { title: string; items: { href: string; label: string }[] }[] 
       { href: "/media/podcast", label: "Podcast" },
       { href: "/media/cursos", label: "Cursos" },
       { href: "/media/conferencias", label: "Conferencias" },
+      { href: "/categorias", label: "Categorías" },
     ],
   },
   {

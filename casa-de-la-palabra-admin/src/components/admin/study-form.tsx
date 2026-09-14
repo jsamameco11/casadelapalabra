@@ -190,9 +190,9 @@ export function StudyForm({ initial, stayOnSave }: { initial: StudyFormValues; s
             onChange={(e) => set("level", e.target.value as StudyFormValues["level"])}
             className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm outline-none focus:border-primary"
           >
-            <option value="beginner">Principiante</option>
-            <option value="intermediate">Intermedio</option>
-            <option value="advanced">Avanzado</option>
+            <option value="beginner">Primeros pasos</option>
+            <option value="intermediate">Creciendo en fe</option>
+            <option value="advanced">Alimento sólido</option>
           </select>
         </div>
       </div>

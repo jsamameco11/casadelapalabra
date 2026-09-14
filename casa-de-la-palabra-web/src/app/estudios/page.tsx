@@ -1,27 +1,46 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
-import { PageHeader, ComingSoon } from "@/components/layout/page-header";
+import { ComingSoon } from "@/components/layout/page-header";
+import { ContentPageHeader } from "@/components/layout/content-page-header";
 
 export const metadata = { title: "Estudios Bíblicos" };
 
-const LEVEL_LABELS: Record<string, string> = { beginner: "Principiante", intermediate: "Intermedio", advanced: "Avanzado" };
+const LEVEL_LABELS: Record<string, string> = {
+  beginner: "Primeros pasos",
+  intermediate: "Creciendo en fe",
+  advanced: "Alimento sólido",
+};
 
-export default async function EstudiosPage() {
+const LEVEL_OPTIONS = Object.entries(LEVEL_LABELS).map(([value, label]) => ({ value, label }));
+
+export default async function EstudiosPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ nivel?: string }>;
+}) {
+  const { nivel } = await searchParams;
   const supabase = await createClient();
-  const { data } = await supabase
+  let query = supabase
     .from("casa_studies")
     .select("id, slug, title, description, level, cover_image_url")
     .eq("status", "published")
     .order("position", { ascending: true });
+  if (nivel) query = query.eq("level", nivel);
+  const { data } = await query;
 
   const studies = data ?? [];
 
   return (
     <div>
-      <PageHeader
+      <ContentPageHeader
         eyebrow="Estudios Bíblicos"
         title="Profundiza en la Palabra"
         description="Una biblioteca de estudios organizados por tema y nivel."
+        basePath="/estudios"
+        paramName="nivel"
+        filterLabel="Todos los niveles"
+        options={LEVEL_OPTIONS}
+        selected={nivel}
       />
       {studies.length === 0 ? (
         <ComingSoon label="La biblioteca de estudios" />
