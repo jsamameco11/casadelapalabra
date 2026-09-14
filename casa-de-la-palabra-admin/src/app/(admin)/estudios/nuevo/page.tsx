@@ -1,38 +1,28 @@
-import { PageShell } from "@/components/admin/page-shell";
-import { StudyForm } from "@/components/admin/study-form";
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
 
 export const metadata = { title: "Nuevo estudio" };
 
-export default function NuevoEstudioPage() {
-  return (
-    <PageShell
-      eyebrow="Contenido"
-      title="Nuevo estudio"
-      description="Guarda los datos generales y pasarás directo al editor completo: secciones, versículos, párrafos y una previsualización en vivo de cómo se verá en la página principal."
-    >
-      <StudyForm
-        initial={{
-          slug: "",
-          title: "",
-          subtitle: "",
-          description: "",
-          main_verse: "",
-          main_verse_book_slug: "",
-          main_verse_chapter: "",
-          main_verse_verse_start: "",
-          main_verse_verse_end: "",
-          main_verse_translation_code: "",
-          cover_image_url: "",
-          social_image_url: "",
-          category_id: "",
-          level: "beginner",
-          duration_minutes: "",
-          status: "draft",
-          position: 0,
-          seo_title: "",
-          seo_description: "",
-        }}
-      />
-    </PageShell>
-  );
+// Una sección necesita que el estudio ya exista (study_id es una llave
+// foránea), así que no hay forma de mostrar el constructor antes de tener
+// una fila real — pero eso no debería sentirse como "dos pasos" para quien
+// edita. En vez de pedir guardar los datos generales primero, se crea el
+// estudio en borrador al instante (título vacío, slug provisional) y se
+// entra directo a la pantalla completa: datos + constructor + previsualización
+// juntos, desde el primer clic en "Nuevo estudio".
+export default async function NuevoEstudioPage() {
+  const supabase = await createClient();
+  const slug = `estudio-sin-titulo-${Date.now().toString(36)}`;
+
+  const { data, error } = await supabase
+    .from("casa_studies")
+    .insert({ slug, title: "", status: "draft", position: 0 })
+    .select("id")
+    .single();
+
+  if (error || !data) {
+    throw new Error(error?.message ?? "No se pudo crear el estudio.");
+  }
+
+  redirect(`/estudios/${data.id}`);
 }

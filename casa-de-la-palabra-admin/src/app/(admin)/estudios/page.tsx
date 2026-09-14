@@ -38,7 +38,9 @@ export default async function EstudiosAdminPage() {
             {studies.map((s) => (
               <tr key={s.id} className="border-b border-border last:border-0">
                 <td className="px-5 py-3 text-muted-foreground">{s.position}</td>
-                <td className="px-5 py-3">{s.title}</td>
+                <td className="px-5 py-3">
+                  {s.title.trim() || <span className="text-muted-foreground italic">(Sin título)</span>}
+                </td>
                 <td className="px-5 py-3 text-muted-foreground">
                   {(s.casa_categories as unknown as { name: string } | null)?.name ?? "—"}
                 </td>

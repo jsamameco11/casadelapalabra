@@ -39,7 +39,10 @@ export function StudyForm({ initial, stayOnSave }: { initial: StudyFormValues; s
   const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [values, setValues] = useState(initial);
   const [paragraphs, setParagraphs] = useState(textToParagraphs(initial.description));
-  const [slugTouched, setSlugTouched] = useState(Boolean(initial.id));
+  // Un estudio recién auto-creado (título todavía vacío) sigue sincronizando
+  // el slug desde el título aunque ya tenga id — solo se "fija" el slug una
+  // vez que el estudio ya tenía nombre real al cargar la página.
+  const [slugTouched, setSlugTouched] = useState(Boolean(initial.id) && Boolean(initial.title.trim()));
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<Date | null>(null);
   const [error, setError] = useState("");

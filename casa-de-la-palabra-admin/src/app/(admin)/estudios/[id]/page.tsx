@@ -25,11 +25,17 @@ export default async function EditarEstudioPage({ params }: { params: Promise<{ 
 
   const bookNames = Object.fromEntries((books ?? []).map((b) => [b.slug, b.default_name]));
 
+  const isNew = !data.title.trim();
+
   return (
     <PageShell
       eyebrow="Contenido"
-      title="Editar estudio"
-      description="Arriba los datos generales; abajo, la narrativa: secciones con el nombre que tú elijas y dentro los contenidos que quieras, en el orden que quieras."
+      title={isNew ? "Nuevo estudio" : "Editar estudio"}
+      description={
+        isNew
+          ? "Ponle un título abajo y empieza a construir: secciones con el nombre que tú elijas y dentro los contenidos que quieras, en el orden que quieras. Todo se guarda solo."
+          : "Arriba los datos generales; abajo, la narrativa: secciones con el nombre que tú elijas y dentro los contenidos que quieras, en el orden que quieras."
+      }
     >
       <div className="space-y-12">
         <section>
